@@ -92,7 +92,7 @@ def targets():
     # genera URLs tipo /static/targets/agent_1.png
     urls = [url_for('static', filename=f"targets/{n}", _external=False) for n in names]
     return jsonify({'targets': urls})
-    
+
 
 
 @app.route('/scan', methods=['POST'])
@@ -125,7 +125,7 @@ def scan():
     )
 
     target_rel = best['path'].replace('\\', '/').split('/static/')[-1] if best['path'] else None
-    target_url = url_for('static_files', filename=target_rel, _external=False) if target_rel else None
+    target_url = url_for('static', filename=target_rel, _external=False) if target_rel else None
 
     return jsonify({'ok': True, 'recognized': recognized, 'matches': best['good'],
                     'inliers': best['inliers'], 'target': target_rel, 'target_url': target_url,
