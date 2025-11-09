@@ -82,8 +82,10 @@ from flask import url_for
 
 @app.route('/targets')
 def targets():
+    # convierte a rutas relativas dentro de /static
     rel = [p.replace('\\', '/').split('/static/')[-1] for p in list_targets()]
-    urls = [url_for('static_files', filename=r, _external=False) for r in rel]
+    # usa el endpoint oficial 'static'
+    urls = [url_for('static', filename=r, _external=False) for r in rel]
     return jsonify({'targets': urls})
 
 
@@ -123,9 +125,7 @@ def scan():
                     'inliers': best['inliers'], 'target': target_rel, 'target_url': target_url,
                     'second_inliers': second['inliers'], 'ratio': ratio})
 
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory('static', filename)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
