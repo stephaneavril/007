@@ -116,7 +116,7 @@ def scan():
         ratio >= RATIO_MIN
     )
 
-    target_rel = best['path'].replace('\','/').split('/static/')[-1] if best['path'] else None
+    target_rel = best['path'].replace('\\', '/').split('/static/')[-1] if best['path'] else None
     target_url = url_for('static_files', filename=target_rel, _external=False) if target_rel else None
 
     return jsonify({'ok': True, 'recognized': recognized, 'matches': best['good'],
