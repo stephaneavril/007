@@ -1,22 +1,17 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset='utf-8' />
+  <meta name='viewport' content='width=device-width,initial-scale=1' />
   <title>AGENCY // Visual Scanner 007</title>
   <style>
-    :root{
-      --bg:#03060C; --panel:#0B101A; --panel2:#0F1726; --brand:#35F3B7; --brand2:#24B1FF; --warn:#FF4D70; --muted:#9bb3c7;
-    }
+    :root{--bg:#03060C; --panel:#0B101A; --panel2:#0F1726; --brand:#35F3B7; --brand2:#24B1FF; --warn:#FF4D70; --muted:#9bb3c7;}
     *{box-sizing:border-box} html,body{height:100%}
-    body{
-      margin:0;color:#E6EEF7;height:100%;
+    body{margin:0;color:#E6EEF7;height:100%;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;
-      background:
-        radial-gradient(1000px 700px at 120% -10%, #0b1a2a55, transparent 60%),
-        radial-gradient(800px 600px at -30% 120%, #141e2f66, transparent 60%),
-        linear-gradient(180deg, #06080F 0%, #03060C 100%);
-    }
+      background: radial-gradient(1000px 700px at 120% -10%, #0b1a2a55, transparent 60%),
+                 radial-gradient(800px 600px at -30% 120%, #141e2f66, transparent 60%),
+                 linear-gradient(180deg, #06080F 0%, #03060C 100%);}
     .shell{max-width:1200px;margin:28px auto;padding:18px}
     .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     .brand{display:flex;align-items:center;gap:12px}
@@ -25,19 +20,14 @@
     .chip{font-size:12px;padding:6px 10px;border:1px solid #1a2740;border-radius:999px;background:linear-gradient(180deg,#0E1422,#0B1019);opacity:.9}
     .grid{display:grid;grid-template-columns:1.4fr .6fr;gap:16px}
     .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #10182a;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden}
-    .camera{position:relative;padding:14px}
-    video{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px}
-    canvas{display:none}
-
+    .camera{position:relative;padding:14px} video{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px} canvas{display:none}
     .hud{pointer-events:none;position:absolute;inset:14px;border-radius:10px;overflow:hidden}
     .reticle{position:absolute;left:50%;top:50%;width:38%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.2);border-radius:50%}
     .sweep{position:absolute;left:50%;top:50%;width:50%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
-      background: conic-gradient(from 0deg, rgba(53,243,183,.35), rgba(53,243,183,0) 60%);
-      filter: blur(10px) saturate(120%);animation: spin 2.6s linear infinite;opacity:.65}
+      background: conic-gradient(from 0deg, rgba(53,243,183,.35), rgba(53,243,183,0) 60%); filter: blur(10px) saturate(120%);animation: spin 2.6s linear infinite;opacity:.65}
     @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
     .scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg, transparent, rgba(36,177,255,.9), transparent);animation: line 2.4s linear infinite}
     @keyframes line{0%{top:10%}50%{top:80%}100%{top:10%}}
-
     .right .inner{padding:16px;display:flex;flex-direction:column;gap:14px}
     .row{display:flex;align-items:center;justify-content:space-between}
     .label{font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
@@ -58,39 +48,35 @@
   </style>
 </head>
 <body>
-<div class="shell">
-  <div class="header">
-    <div class="brand"><div class="logo"></div><div class="title">AGENCY // Visual Scanner 007</div></div>
-    <div class="chip">Educational Exercise</div>
+<div class='shell'>
+  <div class='header'>
+    <div class='brand'><div class='logo'></div><div class='title'>AGENCY // Visual Scanner 007</div></div>
+    <div class='chip'>Educational Exercise</div>
   </div>
 
-  <div class="grid">
-    <div class="panel camera">
-      <video id="video" autoplay playsinline></video>
-      <div class="hud">
-        <div class="scanline"></div>
-        <div class="sweep"></div>
-        <div class="reticle"></div>
-      </div>
-      <canvas id="snap" width="640" height="480"></canvas>
+  <div class='grid'>
+    <div class='panel camera'>
+      <video id='video' autoplay playsinline></video>
+      <div class='hud'><div class='scanline'></div><div class='sweep'></div><div class='reticle'></div></div>
+      <canvas id='snap' width='640' height='480'></canvas>
     </div>
 
-    <div class="panel right">
-      <div class="inner">
-        <div class="row"><div class="label">Status</div><div class="value" id="status">Inicializando…</div></div>
-        <div class="row"><div class="label">Best Matches</div><div class="value" id="matches">0</div></div>
-        <div class="divider"></div>
-        <div class="btns">
-          <button id="scanBtn" class="btn primary">Escanear ahora</button>
-          <button id="autoBtn" class="btn">Auto-scan</button>
-          <button id="resetBtn" class="btn">Reset</button>
+    <div class='panel right'>
+      <div class='inner'>
+        <div class='row'><div class='label'>Status</div><div class='value' id='status'>Inicializando…</div></div>
+        <div class='row'><div class='label'>Best Matches</div><div class='value' id='matches'>0</div></div>
+        <div class='divider'></div>
+        <div class='btns'>
+          <button id='scanBtn' class='btn primary'>Escanear ahora</button>
+          <button id='autoBtn' class='btn'>Auto-scan</button>
+          <button id='resetBtn' class='btn'>Reset</button>
         </div>
-        <div id="welcome" class="big"></div>
-        <div class="divider"></div>
-        <div class="label">Agentes (muestra)</div>
-        <div id="gal" class="gallery"></div>
+        <div id='welcome' class='big'></div>
+        <div class='divider'></div>
+        <div class='label'>Agentes (muestra)</div>
+        <div id='gal' class='gallery'></div>
       </div>
-      <div class="footer"><div class="led"></div><div class="badge" id="ledText">Ready</div></div>
+      <div class='footer'><div class='led'></div><div class='badge' id='ledText'>Ready</div></div>
     </div>
   </div>
 </div>
@@ -109,12 +95,12 @@ const ledText=document.getElementById('ledText');
 const gal=document.getElementById('gal');
 
 let auto=false, autoTimer=null;
-let lastTarget=null, consecutive=0; // exige 3 aciertos seguidos
+let lastTarget=null, consecutive=0; // 3 aciertos seguidos
 
-// Carga miniaturas desde el backend
+// pinta galería desde backend (URLs completas)
 fetch('/targets').then(r=>r.json()).then(j=>{
-  const arr = (j.targets||[]);
-  gal.innerHTML = arr.map(src => `<img src="/static/${src}" alt="agent">`).join('');
+  const arr=j.targets||[];
+  gal.innerHTML = arr.map(src=>`<img src="${src}" alt="agent">`).join('');
 });
 
 async function startCamera(){
@@ -131,17 +117,14 @@ function takeShot(){
 }
 function speakWelcome(){
   try{
-    const u = new SpeechSynthesisUtterance("Bienvenidos, agentes");
-    u.lang = "es-MX"; u.rate = 1; u.pitch = 1;
+    const u=new SpeechSynthesisUtterance('Bienvenidos, agentes');
+    u.lang='es-MX'; u.rate=1; u.pitch=1;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }catch(e){}
 }
 function highlightTarget(relPath){
-  const imgs = Array.from(gal.querySelectorAll('img'));
-  imgs.forEach(img => {
-    const ends = img.getAttribute('src').endsWith(relPath);
-    img.classList.toggle('on', ends);
-  });
+  const imgs=[...gal.querySelectorAll('img')];
+  imgs.forEach(img=> img.classList.toggle('on', img.getAttribute('src').endsWith(relPath)));
 }
 
 async function scanOnce(){
@@ -156,14 +139,8 @@ async function scanOnce(){
 
     if(j.recognized){
       if (j.target) highlightTarget(j.target);
-
-      // 3 aciertos consecutivos sobre el MISMO target
-      if (j.target && j.target === lastTarget) {
-        consecutive++;
-      } else {
-        consecutive = 1;
-        lastTarget = j.target || null;
-      }
+      if (j.target && j.target === lastTarget) { consecutive++; }
+      else { consecutive = 1; lastTarget = j.target || null; }
 
       statusEl.textContent = `Match ${consecutive}/3`;
       if (consecutive >= 3) {
@@ -186,7 +163,6 @@ async function scanOnce(){
 
 function startAuto(){ if(autoTimer)return; auto=true; autoBtn.classList.add('primary'); statusEl.textContent='Auto-scan activo'; autoTimer=setInterval(scanOnce,1600); }
 function stopAuto(){ auto=false; autoBtn.classList.remove('primary'); if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } }
-
 scanBtn.addEventListener('click',scanOnce);
 autoBtn.addEventListener('click',()=> auto ? stopAuto() : startAuto());
 resetBtn.addEventListener('click',()=>{
