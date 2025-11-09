@@ -78,11 +78,14 @@ def best_target_for(face_crop):
 def index():
     return render_template('index.html')
 
+from flask import url_for
+
 @app.route('/targets')
 def targets():
-    rel = [p.replace('\','/').split('/static/')[-1] for p in list_targets()]
+    rel = [p.replace('\\', '/').split('/static/')[-1] for p in list_targets()]
     urls = [url_for('static_files', filename=r, _external=False) for r in rel]
     return jsonify({'targets': urls})
+
 
 @app.route('/scan', methods=['POST'])
 def scan():
