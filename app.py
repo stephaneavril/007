@@ -80,13 +80,19 @@ def index():
 
 from flask import url_for
 
+from flask import url_for
+
 @app.route('/targets')
 def targets():
-    # convierte a rutas relativas dentro de /static
-    rel = [p.replace('\\', '/').split('/static/')[-1] for p in list_targets()]
-    # usa el endpoint oficial 'static'
-    urls = [url_for('static', filename=r, _external=False) for r in rel]
+    # devuelve solo el nombre del archivo dentro de static/targets
+    names = [f for f in os.listdir(os.path.join(app.static_folder, "targets"))
+             if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    names.sort()
+
+    # genera URLs tipo /static/targets/agent_1.png
+    urls = [url_for('static', filename=f"targets/{n}", _external=False) for n in names]
     return jsonify({'targets': urls})
+    
 
 
 @app.route('/scan', methods=['POST'])
