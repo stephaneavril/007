@@ -9,11 +9,14 @@
       --bg:#03060C; --panel:#0B101A; --panel2:#0F1726; --brand:#35F3B7; --brand2:#24B1FF; --warn:#FF4D70; --muted:#9bb3c7;
     }
     *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;color:#E6EEF7;height:100%;
+    body{
+      margin:0;color:#E6EEF7;height:100%;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;
-      background: radial-gradient(1000px 700px at 120% -10%, #0b1a2a55, transparent 60%),
-                 radial-gradient(800px 600px at -30% 120%, #141e2f66, transparent 60%),
-                 linear-gradient(180deg, #06080F 0%, #03060C 100%);}
+      background:
+        radial-gradient(1000px 700px at 120% -10%, #0b1a2a55, transparent 60%),
+        radial-gradient(800px 600px at -30% 120%, #141e2f66, transparent 60%),
+        linear-gradient(180deg, #06080F 0%, #03060C 100%);
+    }
     .shell{max-width:1200px;margin:28px auto;padding:18px}
     .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     .brand{display:flex;align-items:center;gap:12px}
@@ -22,7 +25,10 @@
     .chip{font-size:12px;padding:6px 10px;border:1px solid #1a2740;border-radius:999px;background:linear-gradient(180deg,#0E1422,#0B1019);opacity:.9}
     .grid{display:grid;grid-template-columns:1.4fr .6fr;gap:16px}
     .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #10182a;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden}
-    .camera{position:relative;padding:14px} video{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px} canvas{display:none}
+    .camera{position:relative;padding:14px}
+    video{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px}
+    canvas{display:none}
+
     .hud{pointer-events:none;position:absolute;inset:14px;border-radius:10px;overflow:hidden}
     .reticle{position:absolute;left:50%;top:50%;width:38%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.2);border-radius:50%}
     .sweep{position:absolute;left:50%;top:50%;width:50%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
@@ -31,6 +37,7 @@
     @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
     .scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg, transparent, rgba(36,177,255,.9), transparent);animation: line 2.4s linear infinite}
     @keyframes line{0%{top:10%}50%{top:80%}100%{top:10%}}
+
     .right .inner{padding:16px;display:flex;flex-direction:column;gap:14px}
     .row{display:flex;align-items:center;justify-content:space-between}
     .label{font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
@@ -60,7 +67,11 @@
   <div class="grid">
     <div class="panel camera">
       <video id="video" autoplay playsinline></video>
-      <div class="hud"><div class="scanline"></div><div class="sweep"></div><div class="reticle"></div></div>
+      <div class="hud">
+        <div class="scanline"></div>
+        <div class="sweep"></div>
+        <div class="reticle"></div>
+      </div>
       <canvas id="snap" width="640" height="480"></canvas>
     </div>
 
@@ -85,20 +96,108 @@
 </div>
 
 <script>
-const video=document.getElementById('video'); const snap=document.getElementById('snap'); const ctx=snap.getContext('2d');
-const statusEl=document.getElementById('status'); const matchesEl=document.getElementById('matches'); const welcome=document.getElementById('welcome');
-const scanBtn=document.getElementById('scanBtn'); const autoBtn=document.getElementById('autoBtn'); const resetBtn=document.getElementById('resetBtn'); const ledText=document.getElementById('ledText'); const gal=document.getElementById('gal');
-let auto=false, autoTimer=null;
-const thumbs=[ "/static/targets/agent_1.png", "/static/targets/agent_2.png", "/static/targets/agent_3.png", "/static/targets/agent_4.png", "/static/targets/agent_5.png", "/static/targets/agent_6.png", "/static/targets/agent_7.png", "/static/targets/agent_8.png", "/static/targets/agent_9.png" ];
-gal.innerHTML = thumbs.map(s=>'<img src=\"'+s+'\" alt=\"agent\">').join('');
+const video=document.getElementById('video');
+const snap=document.getElementById('snap');
+const ctx=snap.getContext('2d');
+const statusEl=document.getElementById('status');
+const matchesEl=document.getElementById('matches');
+const welcome=document.getElementById('welcome');
+const scanBtn=document.getElementById('scanBtn');
+const autoBtn=document.getElementById('autoBtn');
+const resetBtn=document.getElementById('resetBtn');
+const ledText=document.getElementById('ledText');
+const gal=document.getElementById('gal');
 
-async function startCamera(){ try{ const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false}); video.srcObject=stream; await video.play(); statusEl.textContent='Cámara lista'; ledText.textContent='Live'; }catch(e){ statusEl.textContent='Error cámara (HTTPS y permisos)'; ledText.textContent='Blocked'; } }
-function takeShot(){ const w=video.videoWidth||640, h=video.videoHeight||480; snap.width=w; snap.height=h; ctx.drawImage(video,0,0,w,h); return snap.toDataURL('image/png'); }
-function speakWelcome(){ try{ const u=new SpeechSynthesisUtterance('Bienvenidos, agentes'); u.lang='es-MX'; u.rate=1; u.pitch=1; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
-async function scanOnce(){ statusEl.textContent='Escaneando…'; const dataUrl=takeShot(); try{ const resp=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl})}); const j=await resp.json(); if(!j.ok){statusEl.textContent='Error';return;} matchesEl.textContent=j.matches; if(j.recognized){ welcome.textContent='BIENVENIDOS, AGENTES'; welcome.classList.add('show'); statusEl.textContent='Acceso autorizado'; ledText.textContent='Authorized'; speakWelcome(); stopAuto(); const imgs=Array.from(gal.querySelectorAll('img')); if(imgs.length) imgs[Math.floor(Math.random()*imgs.length)].classList.add('on'); } else { statusEl.textContent='No coincide'; } } catch(err){ statusEl.textContent='Error de red'; } }
+let auto=false, autoTimer=null;
+let lastTarget=null, consecutive=0; // exige 3 aciertos seguidos
+
+// Carga miniaturas desde el backend
+fetch('/targets').then(r=>r.json()).then(j=>{
+  const arr = (j.targets||[]);
+  gal.innerHTML = arr.map(src => `<img src="/static/${src}" alt="agent">`).join('');
+});
+
+async function startCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    video.srcObject=stream; await video.play();
+    statusEl.textContent='Cámara lista'; ledText.textContent='Live';
+  }catch(e){ statusEl.textContent='Error cámara (HTTPS y permisos)'; ledText.textContent='Blocked'; }
+}
+function takeShot(){
+  const w=video.videoWidth||640, h=video.videoHeight||480;
+  snap.width=w; snap.height=h; ctx.drawImage(video,0,0,w,h);
+  return snap.toDataURL('image/png');
+}
+function speakWelcome(){
+  try{
+    const u = new SpeechSynthesisUtterance("Bienvenidos, agentes");
+    u.lang = "es-MX"; u.rate = 1; u.pitch = 1;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+function highlightTarget(relPath){
+  const imgs = Array.from(gal.querySelectorAll('img'));
+  imgs.forEach(img => {
+    const ends = img.getAttribute('src').endsWith(relPath);
+    img.classList.toggle('on', ends);
+  });
+}
+
+async function scanOnce(){
+  statusEl.textContent='Escaneando…';
+  const dataUrl=takeShot();
+  try{
+    const resp=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl})});
+    const j=await resp.json();
+    if(!j.ok){ statusEl.textContent='Error'; return; }
+
+    matchesEl.textContent = `${j.matches} (inliers: ${j.inliers})`;
+
+    if(j.recognized){
+      if (j.target) highlightTarget(j.target);
+
+      // 3 aciertos consecutivos sobre el MISMO target
+      if (j.target && j.target === lastTarget) {
+        consecutive++;
+      } else {
+        consecutive = 1;
+        lastTarget = j.target || null;
+      }
+
+      statusEl.textContent = `Match ${consecutive}/3`;
+      if (consecutive >= 3) {
+        welcome.textContent='BIENVENIDOS, AGENTES';
+        welcome.classList.add('show');
+        statusEl.textContent='Acceso autorizado';
+        ledText.textContent='Authorized';
+        speakWelcome();
+        stopAuto();
+      }
+    } else {
+      statusEl.textContent='No coincide';
+      consecutive = 0;
+      lastTarget = null;
+    }
+  }catch(err){
+    statusEl.textContent='Error de red';
+  }
+}
+
 function startAuto(){ if(autoTimer)return; auto=true; autoBtn.classList.add('primary'); statusEl.textContent='Auto-scan activo'; autoTimer=setInterval(scanOnce,1600); }
-function stopAuto(){ auto=false; autoBtn.classList.remove('primary'); if(autoTimer){clearInterval(autoTimer); autoTimer=null;} }
-scanBtn.addEventListener('click',scanOnce); autoBtn.addEventListener('click',()=>auto?stopAuto():startAuto()); resetBtn.addEventListener('click',()=>{stopAuto(); matchesEl.textContent='0'; welcome.textContent=''; welcome.classList.remove('show'); statusEl.textContent='Listo'; ledText.textContent='Ready'; gal.querySelectorAll('img').forEach(i=>i.classList.remove('on'));});
+function stopAuto(){ auto=false; autoBtn.classList.remove('primary'); if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } }
+
+scanBtn.addEventListener('click',scanOnce);
+autoBtn.addEventListener('click',()=> auto ? stopAuto() : startAuto());
+resetBtn.addEventListener('click',()=>{
+  stopAuto();
+  matchesEl.textContent='0';
+  welcome.textContent=''; welcome.classList.remove('show');
+  statusEl.textContent='Listo'; ledText.textContent='Ready';
+  consecutive=0; lastTarget=null;
+  gal.querySelectorAll('img').forEach(i=>i.classList.remove('on'));
+});
+
 startCamera();
 </script>
 </body>
