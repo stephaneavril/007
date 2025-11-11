@@ -1,5 +1,8 @@
 flask
-opencv-python-headless
-werkzeug
-pillow
 gunicorn
+pillow
+numpy==1.26.4
+opencv-python-headless
+cmake
+dlib==19.24.2
+face_recognition==1.3.0
