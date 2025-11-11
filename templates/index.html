@@ -98,10 +98,11 @@ let auto=false, autoTimer=null;
 let lastTarget=null, consecutive=0; // 3 aciertos seguidos
 
 // pinta galería desde backend (URLs completas)
-fetch('/targets').then(r=>r.json()).then(j=>{
-  const arr=j.targets||[];
-  gal.innerHTML = arr.map(src=>`<img src="${src}" alt="agent">`).join('');
+fetch('/targets').then(r => r.json()).then(j => {
+  const arr = j.targets || [];
+  gal.innerHTML = arr.map(src => `<img src="${src}" alt="agent">`).join('');
 });
+
 
 async function startCamera(){
   try{

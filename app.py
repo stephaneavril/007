@@ -1,137 +1,112 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
-import os, base64, cv2, numpy as np
+# app.py (versión embeddings)
+from flask import Flask, render_template, request, jsonify, url_for
+import os, base64
 from io import BytesIO
 from PIL import Image
+import numpy as np
+import face_recognition
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024
 
-TARGET_DIR = os.path.join('static','targets')
+TARGET_DIR = os.path.join('static', 'targets')
+TOLERANCE = float(os.environ.get('TOLERANCE', '0.58'))  # 0.6 típico; ajusta según pruebas
 
-def b64_to_image(b64_string):
+def b64_to_rgb(b64_string):
     header, encoded = b64_string.split(',', 1)
-    data = base64.b64decode(encoded)
-    img = Image.open(BytesIO(data)).convert('RGB')
-    return np.array(img)[:, :, ::-1]
+    img = Image.open(BytesIO(base64.b64decode(encoded))).convert('RGB')
+    return np.array(img)
 
-def detect_face_and_crop(img_bgr):
-    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    haar = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-    faces = haar.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(80,80))
-    if len(faces) == 0:
-        return None
-    (x,y,w,h) = sorted(faces, key=lambda r:r[2]*r[3], reverse=True)[0]
-    pad = int(0.4*h)
-    x1 = max(0, x - pad); y1 = max(0, y - pad)
-    x2 = min(img_bgr.shape[1], x + w + pad); y2 = min(img_bgr.shape[0], y + h + pad)
-    return img_bgr[y1:y2, x1:x2]
+def load_gallery():
+    """Crea una base {person_id: {'encs':[...], 'sample_path': 'static/...'}}"""
+    db = {}
+    if not os.path.exists(TARGET_DIR): return db
+    for name in sorted(os.listdir(TARGET_DIR)):
+        person_path = os.path.join(TARGET_DIR, name)
+        if not os.path.isdir(person_path):  # también soporta plano
+            person_encs = []
+            img = face_recognition.load_image_file(person_path)
+            locs = face_recognition.face_locations(img, model="hog")
+            if not locs: continue
+            enc = face_recognition.face_encodings(img, locs)[0]
+            rel = person_path.replace('\\','/').split('/static/')[-1]
+            db[name] = {'encs':[enc], 'sample_path': rel}
+            continue
 
-def orb_match_scores(imgA, imgB, n_features=1500, ratio=0.6):
-    def prep(im):
-        g = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        g = clahe.apply(g)
-        h,w = g.shape
-        if max(h,w) > 800:
-            s = 800/float(max(h,w))
-            g = cv2.resize(g, (int(w*s), int(h*s)))
-        return g
-    a = prep(imgA); b = prep(imgB)
-    orb = cv2.ORB_create(nfeatures=n_features)
-    kp1, des1 = orb.detectAndCompute(a, None)
-    kp2, des2 = orb.detectAndCompute(b, None)
-    if des1 is None or des2 is None or len(kp1)<8 or len(kp2)<8:
-        return 0, 0
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-    matches = bf.knnMatch(des1, des2, k=2)
-    good = [m for m,n in matches if m.distance < ratio*n.distance]
-    if len(good) < 8:
-        return len(good), 0
-    pts1 = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1,1,2)
-    pts2 = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1,1,2)
-    H, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 5.0)
-    inliers = int(mask.sum()) if mask is not None else 0
-    return len(good), inliers
+        encs = []
+        sample_rel = None
+        for f in sorted(os.listdir(person_path)):
+            if not f.lower().endswith(('.png','.jpg','.jpeg')): continue
+            p = os.path.join(person_path, f)
+            img = face_recognition.load_image_file(p)
+            locs = face_recognition.face_locations(img, model="hog")
+            if not locs: continue
+            enc = face_recognition.face_encodings(img, locs)[0]
+            encs.append(enc)
+            if sample_rel is None:
+                sample_rel = (p.replace('\\','/').split('/static/')[-1])
+        if encs:
+            db[name] = {'encs': encs, 'sample_path': sample_rel}
+    return db
 
-def list_targets():
-    if not os.path.exists(TARGET_DIR):
-        return []
-    files = [os.path.join(TARGET_DIR, f) for f in os.listdir(TARGET_DIR)
-             if f.lower().endswith(('.png','.jpg','.jpeg'))]
-    return sorted(files)
-
-def best_target_for(face_crop):
-    best = {"good":0, "inliers":0, "path":None}
-    second = {"inliers":0}
-    for p in list_targets():
-        timg = cv2.imread(p)
-        if timg is None: continue
-        good, inl = orb_match_scores(face_crop, timg)
-        if inl > best["inliers"]:
-            second["inliers"] = best["inliers"]
-            best = {"good":good, "inliers":inl, "path":p}
-        elif inl > second["inliers"]:
-            second["inliers"] = inl
-    return best, second
+GALLERY = load_gallery()
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-from flask import url_for
-
-from flask import url_for
-
 @app.route('/targets')
 def targets():
-    # devuelve solo el nombre del archivo dentro de static/targets
-    names = [f for f in os.listdir(os.path.join(app.static_folder, "targets"))
-             if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    names.sort()
-
-    # genera URLs tipo /static/targets/agent_1.png
-    urls = [url_for('static', filename=f"targets/{n}", _external=False) for n in names]
+    # Devuelve una imagen representativa por persona (para tu galería UI)
+    urls = []
+    for name, info in GALLERY.items():
+        urls.append(url_for('static', filename=info['sample_path'], _external=False))
     return jsonify({'targets': urls})
-
-
 
 @app.route('/scan', methods=['POST'])
 def scan():
     data = request.json.get('image')
     if not data:
         return jsonify({'ok': False, 'msg': 'No image'}), 400
-    try:
-        img = b64_to_image(data)
-    except Exception:
-        return jsonify({'ok': False, 'msg': 'Invalid image'}), 400
+    rgb = b64_to_rgb(data)
 
-    face = detect_face_and_crop(img)
-    if face is None:
+    # Detecta UNA cara principal (si hay varias, toma la más grande)
+    locs = face_recognition.face_locations(rgb, model="hog")
+    if not locs:
         return jsonify({'ok': True, 'recognized': False, 'matches': 0, 'inliers': 0})
 
-    best, second = best_target_for(face)
+    # Toma la cara más grande
+    (top, right, bottom, left) = sorted(locs, key=lambda b:(b[2]-b[0])*(b[1]-b[3]), reverse=True)[0]
+    enc = face_recognition.face_encodings(rgb, [(top, right, bottom, left)])[0]
 
-    INLIERS_MIN = int(os.environ.get('INLIERS_MIN', '35'))
-    GOOD_MIN    = int(os.environ.get('GOOD_MIN', '60'))
-    MARGIN_MIN  = int(os.environ.get('MARGIN_MIN', '15'))
-    RATIO_MIN   = float(os.environ.get('RATIO_MIN', '1.5'))
+    # Compara contra TODA la galería (todas las fotos por persona)
+    best_person = None
+    best_dist = 1e9
+    for person, info in GALLERY.items():
+        dists = face_recognition.face_distance(info['encs'], enc)
+        d = float(np.min(dists))
+        if d < best_dist:
+            best_dist = d
+            best_person = person
 
-    ratio = (best['inliers']/max(1,second['inliers'])) if second['inliers']>0 else 999.0
-    recognized = (
-        best['inliers'] >= INLIERS_MIN and
-        best['good']    >= GOOD_MIN and
-        (best['inliers'] - second['inliers']) >= MARGIN_MIN and
-        ratio >= RATIO_MIN
-    )
-
-    target_rel = best['path'].replace('\\', '/').split('/static/')[-1] if best['path'] else None
+    recognized = (best_person is not None and best_dist <= TOLERANCE)
+    target_rel = GALLERY[best_person]['sample_path'] if recognized else None
     target_url = url_for('static', filename=target_rel, _external=False) if target_rel else None
 
-    return jsonify({'ok': True, 'recognized': recognized, 'matches': best['good'],
-                    'inliers': best['inliers'], 'target': target_rel, 'target_url': target_url,
-                    'second_inliers': second['inliers'], 'ratio': ratio})
+    # Campos "matches/inliers" se mantienen para no romper la UI,
+    # los llenamos con métricas análogas (invertimos distancia)
+    pseudo_matches = max(0, int(200*(1.0 - best_dist))) if recognized else 0
+    pseudo_inliers = max(0, int(300*(1.0 - best_dist))) if recognized else 0
 
-
+    return jsonify({
+        'ok': True,
+        'recognized': recognized,
+        'matches': pseudo_matches,
+        'inliers': pseudo_inliers,
+        'target': target_rel,
+        'target_url': target_url,
+        'distance': best_dist
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
