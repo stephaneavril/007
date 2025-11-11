@@ -68,7 +68,7 @@ for pid, paths in list_people():
         embs.append(f.normed_embedding)
         if sample_rel is None:
             # <- RUTA CORRECTA RELATIVA A /static
-           sample_rel = f"targets/{os.path.relpath(p, start=TARGET_DIR).replace(os.path.sep, '/')}"
+           sample_rel = os.path.relpath(p, start='static').replace(os.path.sep, '/')
         GALLERY[pid] = {'embs': np.vstack(embs), 'sample_rel': sample_rel}
 
 @app.route('/')
